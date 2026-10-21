@@ -1,0 +1,39 @@
+# Local Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Downloaded datasets and generated training files
+.data/
+data/
+result/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.zip
+
+# Local credentials and editor settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Web dependencies and local hosting credentials
+node_modules/
+.vercel/
+.netlify/
+.openai/
+
+# dist/ contains the actual static learning pages in this repository.
