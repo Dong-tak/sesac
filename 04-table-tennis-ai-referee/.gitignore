@@ -1,0 +1,7 @@
+/.venv/
+/.uv-cache/
+/.ultralytics/
+/__pycache__/
+/datasets/
+/runs/
+/yolo11n.pt

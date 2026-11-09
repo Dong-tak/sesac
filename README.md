@@ -10,6 +10,7 @@
 | `02-transformer/reference/` | 살펴본 Transformer 원본 코드와 ELI5 교재 | [Transformer 학습 안내](02-transformer/README.md) |
 | `02-transformer/training/` | uv 환경과 Multi30k 준비 스크립트가 포함된 실습본 | [실행 안내](02-transformer/training/SETUP.md) |
 | `03-web-visualizations/` | 벡터·각도 학습 페이지와 Transformer 교재의 웹 게시용 파일 | [페이지 안내](03-web-visualizations/README.md) |
+| `04-table-tennis-ai-referee/` | 탁구 AI 심판 기획과 YOLO11 탁구공 검출기 학습 | [학습 안내](04-table-tennis-ai-referee/README.md) · [기획서](04-table-tennis-ai-referee/PLAN.md) |
 
 ```text
 sesac/
@@ -20,9 +21,10 @@ sesac/
 │   ├── reference/              # 원본 구조를 보존한 학습용 코드
 │   │   └── docs/book/          # 그림·코드·함수 해설 7개 페이지
 │   └── training/               # Python 3.9 · uv · 데이터 준비 스크립트
-└── 03-web-visualizations/
-    ├── vector-angle/dist/
-    └── transformer-eli5-book/dist/
+├── 03-web-visualizations/
+│   ├── vector-angle/dist/
+│   └── transformer-eli5-book/dist/
+└── 04-table-tennis-ai-referee/  # 시연 기획서와 탁구공 검출기 학습 코드
 ```
 
 ## 읽는 순서
@@ -44,6 +46,7 @@ sesac/
 - `transformer` → `02-transformer/reference`
 - `success_transformer` → `02-transformer/training`
 - `sites` → `03-web-visualizations`
+- `table-tennis-ai-referee`와 탁구 AI 심판 기획서 → `04-table-tennis-ai-referee`
 
 기존 작업 폴더에서 파일을 복사해 정리했습니다. 원래 폴더와 Git 이력은 변경하지 않았으며 이 저장소는 독립된 하나의 Git 저장소입니다. 하위 프로젝트를 submodule로 등록하지 않습니다.
 
