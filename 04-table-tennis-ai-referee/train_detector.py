@@ -109,6 +109,7 @@ def train(config: dict, val_image: Path, epochs: int, imgsz: int, batch: int) ->
     # 강의 lab5와 같은 방식으로 COCO 사전학습 가중치를 공 1클래스에 맞춰 학습한다.
     model = YOLO(str(ROOT / "yolo11n.pt"))
     model.train(data=str(train_data), epochs=epochs, imgsz=imgsz, batch=batch,
+                optimizer="AdamW", lr0=0.002, momentum=0.9,
                 device=0, workers=0, project=str(RUNS), name=run_dir.name, exist_ok=True, seed=1729)
 
     best_path = run_dir / "weights" / "best.pt"
