@@ -1,0 +1,11 @@
+# Windows x64, Python 3.14. Install PyTorch and torchvision from the cu130 index separately.
+wget==3.2
+easydict==1.14
+opencv-python==5.1.0.95
+numpy==2.5.4
+torchsummary==1.5.1
+tensorboard==2.21.0
+scikit-learn==1.9.1
+tqdm==4.70.1
+matplotlib==3.11.2
+PyTurboJPEG==2.6.1

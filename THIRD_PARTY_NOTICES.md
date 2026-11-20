@@ -1,5 +1,13 @@
 # 출처와 원본 자료
 
+## TTNet 참고 구현
+
+- 원본: https://github.com/maudzung/TTNet-Realtime-for-Table-Tennis-Pytorch
+- 저자: Nguyen Mau Dung (소스 파일 표기)
+- 관련 경로: `04-table-tennis-ai-referee/ttnet/`
+
+실습 과정에서 수정한 코드이며 원본 파일의 저자 표기를 보존했습니다. 데이터셋과 학습 가중치는 포함하지 않습니다. 원본의 이용 조건은 해당 원본 저장소에서 확인하세요.
+
 ## Transformer 참고 구현
 
 - 원본: https://github.com/hyunwoongko/transformer

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TTNet · 사진 9장으로 문제 하나 만들기</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f2f5ef; color: #182b25; font: 1rem/1.6 system-ui, "Malgun Gothic", sans-serif; }
+    main { max-width: 65rem; margin: auto; padding: clamp(1rem, 5vw, 3.5rem); }
+    header { margin-bottom: 2rem; }
+    h1 { font-size: clamp(1.85rem, 5vw, 3.3rem); line-height: 1.2; margin: .45rem 0 .65rem; letter-spacing: -.04em; }
+    p { margin: .35rem 0; }
+    .function { color: #365e50; font-weight: 700; }
+    section, details { background: #fff; border: 1px solid #d9e2d8; border-radius: 1rem; padding: clamp(.9rem, 3vw, 1.5rem); margin-bottom: 1rem; }
+    h2 { margin: 0 0 .9rem; font-size: 1.25rem; }
+    .frames { display: grid; grid-template-columns: repeat(9, minmax(4rem, 1fr)); gap: .4rem; padding: .2rem .1rem .55rem; overflow-x: auto; }
+    .frame { margin: 0; padding: .3rem; background: #eaf1ed; border: 2px solid transparent; border-radius: .6rem; text-align: center; }
+    .court { display: block; position: relative; height: clamp(2.5rem, 7vw, 4rem); background: #26694e; border: 1px solid #fff; border-radius: .35rem; }
+    .court::after { content: ""; position: absolute; left: 50%; height: 100%; border-left: 1px solid #c8e6d9; }
+    .ball { position: absolute; z-index: 1; top: var(--y); left: var(--x); width: .5rem; height: .5rem; border-radius: 50%; background: #fff; }
+    figcaption { font-weight: 750; }
+    .event { background: #fff0be; border-color: #a06b14; }
+    .last { background: #dceafb; border-color: #3e6db2; }
+    .answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .6rem; }
+    .answer { border: 2px solid; border-radius: .7rem; padding: .7rem .9rem; }
+    .answer.event { border-color: #a06b14; }
+    .answer.last { border-color: #3e6db2; }
+    .answer strong { display: block; font-size: 1.15rem; }
+    .note { color: #405b51; font-size: .9rem; }
+    summary { font-weight: 750; cursor: pointer; }
+    summary:focus-visible { outline: 2px solid #26694e; outline-offset: 4px; }
+    pre { padding: .65rem; background: #edf3ef; border-radius: .5rem; overflow-x: auto; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <code class="function">get_events_infor()</code>
+    <h1>사진 9장으로 문제 하나 만들기</h1>
+    <p>이 함수는 모델에게 보여 줄 사진과 채점할 정답을 한 묶음으로 모아요.</p>
+  </header>
+
+  <section aria-labelledby="photos">
+    <h2 id="photos">“18번 사진에서 공이 튀었대!”</h2>
+    <p>18번 앞에서 4장, 뒤에서 4장을 골라요.</p>
+    <div class="frames" role="group" tabindex="0" aria-label="14번부터 22번까지의 프레임. 18번은 바운드, 22번은 공 위치와 마스크의 기준이에요.">
+      <figure class="frame"><span class="court" aria-hidden="true"><span class="ball" style="--x:12%;--y:16%"></span></span><figcaption>14</figcaption></figure>
+      <figure class="frame"><span class="court" aria-hidden="true"><span class="ball" style="--x:20%;--y:26%"></span></span><figcaption>15</figcaption></figure>
+      <figure class="frame"><span class="court" aria-hidden="true"><span class="ball" style="--x:27%;--y:39%"></span></span><figcaption>16</figcaption></figure>
+      <figure class="frame"><span class="court" aria-hidden="true"><span class="ball" style="--x:35%;--y:52%"></span></span><figcaption>17</figcaption></figure>
+      <figure class="frame event"><span class="court" aria-hidden="true"><span class="ball" style="--x:43%;--y:65%"></span></span><figcaption>18</figcaption></figure>
+      <figure class="frame"><span class="court" aria-hidden="true"><span class="ball" style="--x:53%;--y:52%"></span></span><figcaption>19</figcaption></figure>
+      <figure class="frame"><span class="court" aria-hidden="true"><span class="ball" style="--x:60%;--y:41%"></span></span><figcaption>20</figcaption></figure>
+      <figure class="frame"><span class="court" aria-hidden="true"><span class="ball" style="--x:69%;--y:34%"></span></span><figcaption>21</figcaption></figure>
+      <figure class="frame last"><span class="court" aria-hidden="true"><span class="ball" style="--x:79%;--y:31%"></span></span><figcaption>22</figcaption></figure>
+    </div>
+    <p class="note"><code>game_1</code>의 실제 프레임 번호예요. 그림 속 공 위치는 설명을 위한 그림이에요.</p>
+  </section>
+
+  <section aria-labelledby="answers">
+    <h2 id="answers">사진 묶음에 정답을 붙여요</h2>
+    <div class="answers">
+      <div class="answer event"><strong>가운데 18번</strong>무슨 일이 있었어요? <b>바운드!</b></div>
+      <div class="answer last"><strong>마지막 22번</strong>공은 어디 있었어요? <b>(611, 526)</b><br>마스크도 22번 그림을 써요.</div>
+    </div>
+  </section>
+
+  <details>
+    <summary>코드에서 딱 두 줄만 찾기</summary>
+    <pre><code>last_f_idx = smooth_idx + num_frames_from_event
+events_infor.append([img_path_list, ball_position_xy, target_events, seg_path])</code></pre>
+    <p>첫 줄은 마지막 사진 번호를 구해요. <strong>18 + 4 = 22</strong></p>
+    <p>둘째 줄은 사진 경로 9개와 정답을 한 묶음으로 목록에 넣어요.</p>
+  </details>
+
+  <details>
+    <summary>22번 공 좌표가 없으면 어떻게 될까요?</summary>
+    <p>이 묶음은 건너뛰어요. 코드에서 <code>continue</code>를 만나면 <code>append()</code>까지 가지 않아요.</p>
+  </details>
+</main>
+</body>
+</html>

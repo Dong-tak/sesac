@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TTNet 데이터 코드 · 큰 그림부터 한 줄씩</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef4f0;color:#172e28;font:1rem/1.65 system-ui,"Malgun Gothic",sans-serif}
+main{max-width:66rem;margin:auto;padding:clamp(.9rem,4vw,3rem)}
+header{padding:1.3rem 0 1.6rem}
+h1{font-size:clamp(1.9rem,5vw,3.4rem);line-height:1.2;letter-spacing:-.045em;margin:.3rem 0 .7rem}
+h2{font-size:clamp(1.24rem,2.5vw,1.7rem);line-height:1.3;margin:0 0 .75rem}
+p{margin:.4rem 0 .65rem}
+section,.function{padding:clamp(.8rem,3vw,1.5rem);background:#fff;border:1px solid #d5e3d9;border-radius:1rem;margin:0 0 1rem}
+a{color:#155a49}
+:focus-visible{outline:3px solid #136a5a;outline-offset:3px}
+nav{display:flex;flex-wrap:wrap;gap:.45rem .8rem;margin-top:1rem}
+.flow,.frames{display:flex;gap:.45rem;padding:.35rem .2rem;overflow:auto;align-items:stretch}
+.flow div{flex:1;min-width:9rem;background:#dff2e7;border-radius:.7rem;padding:.65rem;text-align:center}
+.flow strong,.frame strong{display:block}
+.arrow{align-self:center;font-size:1.35rem;color:#2b6254}
+.note,.line{color:#405e54;font-size:.9rem}
+.frame{flex:1;min-width:2.5rem;background:#edf4f0;border:2px solid transparent;text-align:center;border-radius:.6rem;padding:.25rem}
+.frame span{display:block;color:#27724e;font-size:1.4rem}
+.frame.bounce{background:#fff0bc;border-color:#9a6e19}
+.frame.last{background:#daeafb;border-color:#376eb3}
+.key{display:flex;flex-wrap:wrap;gap:.4rem .9rem;margin-top:.7rem}
+.key span{padding:.25rem .55rem;border-radius:.35rem;background:#edf4f0}
+.key .bounce{background:#fff0bc}.key .last{background:#daeafb}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));gap:.6rem}
+.cards div{padding:.65rem .8rem;background:#eef5f1;border-radius:.6rem}
+.cards strong{display:block}
+details summary{cursor:pointer;font-weight:730;padding:.22rem 0}
+.function .line{margin-right:.45rem}
+.function:target{border-color:#2a755e;scroll-margin-top:1rem}
+.rows{border-top:1px solid #d5e3d9}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:1rem;padding:.65rem 0;border-bottom:1px solid #e3ece5}
+.row:last-child{border-bottom:0}
+.row p{margin:.3rem 0}
+pre{padding:.55rem;border-radius:.35rem;background:#edf4f0;margin:.15rem 0;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4;font-size:.85rem}
+code{font-family:Consolas,"Courier New",monospace}
+.quiz{padding:.4rem 0;border-top:1px solid #d5e3d9}
+@media(max-width:42rem){.row{grid-template-columns:minmax(0,1fr);gap:.1rem}}
+</style>
+</head><body><main>
+<header>
+  <p class="note">TTNet 공부 · <code>ttnet_data_utils.py</code></p>
+  <h1>영상이 어떻게 AI의 문제와 정답이 될까?</h1>
+  <p>큰 흐름을 먼저 보고, 궁금한 함수만 펼쳐서 한 줄씩 읽어 보세요.</p>
+  <nav aria-label="학습 순서"><a href="#overview">큰 그림</a><a href="#example">실제 예시</a><a href="#terms">파이썬 기초</a><a href="#functions">함수와 코드</a><a href="#check">이해 확인</a></nav>
+</header>
+<section id="overview">
+  <h2>큰 그림</h2>
+  <div class="flow" role="group" tabindex="0" aria-label="파일에서 샘플 묶음을 만들고 이미지를 읽어 모델에 전달하는 흐름">
+    <div><strong>📁 재료</strong>프레임 파일, 공 좌표,<br>이벤트, 마스크</div><span class="arrow" aria-hidden="true">→</span>
+    <div><strong>🗂️ 이 파일</strong>문제·정답을 묶고<br>학습·검증으로 나눠요</div><span class="arrow" aria-hidden="true">→</span>
+    <div><strong>🖼️ Dataset</strong>사진을 실제로 읽어<br>배열로 만들어요</div><span class="arrow" aria-hidden="true">→</span>
+    <div><strong>🎯 모델과 손실</strong>답을 예측하고<br>정답과 비교해요</div>
+  </div>
+  <p><strong>이 파일은 두 곳에서 불려요.</strong> 학습 전에 <code>get_events_infor()</code>로 샘플 목록을 만들고, 학습 중에는 <code>create_target_ball()</code>로 좌표 정답을 모델 출력에 맞는 점수표로 바꿔요.</p>
+</section>
+<section id="example">
+  <h2>실제 예시 · game_1의 18번 바운드</h2>
+  <p><code>events_markup.json</code>에 “18번에서 공이 튀었다”는 기록이 있어요. 18번 앞뒤 4장씩을 골라요.</p>
+  <div class="frames" role="group" tabindex="0" aria-label="14번부터 22번까지. 가운데 18번은 이벤트, 마지막 22번은 공 좌표와 마스크의 기준입니다."><div class="frame"><span aria-hidden="true">◉</span><strong>14</strong></div><div class="frame"><span aria-hidden="true">◉</span><strong>15</strong></div><div class="frame"><span aria-hidden="true">◉</span><strong>16</strong></div><div class="frame"><span aria-hidden="true">◉</span><strong>17</strong></div><div class="frame bounce"><span aria-hidden="true">◉</span><strong>18</strong></div><div class="frame"><span aria-hidden="true">◉</span><strong>19</strong></div><div class="frame"><span aria-hidden="true">◉</span><strong>20</strong></div><div class="frame"><span aria-hidden="true">◉</span><strong>21</strong></div><div class="frame last"><span aria-hidden="true">◉</span><strong>22</strong></div></div>
+  <div class="key"><span class="bounce"><b>18번</b> 바운드 정답 [1, 0]</span><span class="last"><b>22번</b> 공 좌표 (611, 526) + 마스크</span></div>
+  <p>이 함수가 목록에 넣는 것</p>
+  <pre><code>[사진 경로 9개, 공 좌표 [611, 526], 이벤트 정답 [1, 0], 마스크 경로]</code></pre>
+  <p class="note">기본 설정의 예시예요. <code>--smooth-labelling</code>을 켜면 18번 주변에도 각각 다른 가운데 사진을 둔 샘플 후보를 만들어요.</p>
+</section>
+<section id="terms">
+  <h2>코드를 읽는 데 필요한 파이썬</h2>
+  <div class="cards">
+    <div><strong><code>def</code>, 인자, <code>return</code></strong>함수 이름을 붙이고, 입력을 받아, 결과를 호출한 곳에 돌려줘요.</div>
+    <div><strong><code>[…]</code>, <code>{…}</code>, <code>.items()</code></strong>리스트는 순서대로 담고, 딕셔너리는 이름표로 찾고, <code>items()</code>는 이름표와 값을 짝으로 꺼내요.</div>
+    <div><strong><code>for</code>, 들여쓰기, <code>range</code></strong>들여쓴 줄을 항목마다 반복해요. <code>range(14, 23)</code>은 14부터 22까지예요.</div>
+    <div><strong><code>if</code>, <code>continue</code>, <code>append()</code></strong>조건을 확인하고, 빠진 정답이 있으면 이번 묶음은 건너뛰고, 완성되면 목록 끝에 넣어요.</div>
+    <div><strong>인덱스와 슬라이스</strong><code>[0]</code>은 첫 칸이에요. <code>[:320]</code>은 처음 320칸, <code>[320:]</code>은 그다음 칸부터 끝까지예요.</div>
+    <div><strong>배열과 텐서</strong>숫자를 여러 칸에 담는 형태예요. 이 파일은 NumPy 배열로 라벨을 담고, PyTorch 텐서로 공의 점수표를 계산해요.</div>
+  </div>
+</section>
+<section id="functions">
+  <h2>함수마다 하는 일</h2>
+  <p>처음엔 <a href="#events"><code>get_events_infor()</code></a> → <a href="#smooth"><code>smooth_event_labelling()</code></a> → <a href="#split"><code>train_val_data_separation()</code></a> 순서로 펼쳐 보세요. 아래에는 원본의 빈 줄을 뺀 모든 줄을 넣었어요.</p>
+  <p class="note">공 점수표 예시 · 너비 320, 높이 128일 때 [가로 점수 320칸] + [세로 점수 128칸] = 448칸이에요. 정답 x=100, y=50이라면 각 묶음의 100번째·50번째 인덱스에서 점수가 가장 높아요.</p>
+</section>
+<details class="function" id="setup">
+  <summary><span class="line">1행</span> <strong>준비</strong></summary>
+  <p>이 파일의 설명을 읽고, 필요한 도구를 가져옵니다.</p>
+  <div class="rows">
+    <div class="row" data-lines="1-10"><div><span class="line">1–10행</span><pre><code>&quot;&quot;&quot;
+# -*- coding: utf-8 -*-
+-----------------------------------------------------------------------------------
+# Author: Nguyen Mau Dung
+# DoC: 2020.05.21
+# email: nguyenmaudung93.kstn@gmail.com
+# project repo: https://github.com/maudzung/TTNet-Realtime-for-Table-Tennis-Pytorch
+-----------------------------------------------------------------------------------
+# Description: utils for TTNet dataset
+&quot;&quot;&quot;</code></pre></div><p>파일의 설명과 출처를 적은 문자열이에요. 함수나 학습을 실행하는 부분은 여기서 시작하지 않아요.</p></div>
+    <div class="row" data-lines="12-12"><div><span class="line">12행</span><pre><code>import os</code></pre></div><p>os는 폴더와 파일 경로를 조합하거나 파일 존재 여부를 확인할 때 써요.</p></div>
+    <div class="row" data-lines="13-13"><div><span class="line">13행</span><pre><code>import json</code></pre></div><p>json은 라벨 파일을 읽어 파이썬 딕셔너리로 바꿔요.</p></div>
+    <div class="row" data-lines="14-14"><div><span class="line">14행</span><pre><code>import sys</code></pre></div><p>sys는 파이썬 실행 환경을 다루는 도구예요.</p></div>
+    <div class="row" data-lines="15-15"><div><span class="line">15행</span><pre><code>from collections import Counter</code></pre></div><p>Counter는 같은 값이 몇 번 나오는지 세요. 맨 아래 점검 코드에서 사용해요.</p></div>
+    <div class="row" data-lines="17-17"><div><span class="line">17행</span><pre><code>import cv2</code></pre></div><p>cv2는 OpenCV예요. 이 파일에서는 이미지를 읽고 색 채널 순서를 바꿔요.</p></div>
+    <div class="row" data-lines="18-18"><div><span class="line">18행</span><pre><code>from sklearn.model_selection import train_test_split</code></pre></div><p>scikit-learn에서 데이터를 두 묶음으로 나누는 함수를 가져와요.</p></div>
+    <div class="row" data-lines="19-19"><div><span class="line">19행</span><pre><code>import torch</code></pre></div><p>torch는 PyTorch예요. 공 정답 점수표를 텐서로 만들고 계산해요.</p></div>
+    <div class="row" data-lines="20-20"><div><span class="line">20행</span><pre><code>import numpy as np</code></pre></div><p>numpy를 np라는 짧은 이름으로 불러요. 좌표와 이벤트 정답 배열에 써요.</p></div>
+    <div class="row" data-lines="22-22"><div><span class="line">22행</span><pre><code>sys.path.append('../')</code></pre></div><p>파이썬이 모듈을 찾아볼 경로 목록에 ../를 추가해요. 상대 경로는 실행 위치의 영향을 받아요.</p></div>
+  </div>
+</details>
+<details class="function" id="image">
+  <summary><span class="line">25행</span> <strong>load_raw_img</strong></summary>
+  <p>이미지 파일 경로 → RGB 순서로 읽어 들인 이미지. 아래 데이터셋에서 마스크를 읽을 때 사용합니다.</p>
+  <div class="rows">
+    <div class="row" data-lines="25-25"><div><span class="line">25행</span><pre><code>def load_raw_img(img_path):</code></pre></div><p>def는 함수를 정의해요. img_path는 호출할 때 넘겨받는 이미지 파일 경로예요.</p></div>
+    <div class="row" data-lines="26-26"><div><span class="line">26행</span><pre><code>    &quot;&quot;&quot;Load raw image based on the path to the image&quot;&quot;&quot;</code></pre></div><p>함수가 하는 일을 적은 설명이에요.</p></div>
+    <div class="row" data-lines="27-27"><div><span class="line">27행</span><pre><code>    img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)  # BGR --&gt; RGB</code></pre></div><p>괄호 안쪽부터 읽어요. imread가 파일을 BGR 순서로 읽고, cvtColor가 RGB 순서로 바꿔 img에 넣어요.</p></div>
+    <div class="row" data-lines="28-28"><div><span class="line">28행</span><pre><code>    return img</code></pre></div><p>return은 계산한 img를 호출한 코드에 돌려줘요.</p></div>
+  </div>
+</details>
+<details class="function" id="gaussian">
+  <summary><span class="line">31행</span> <strong>gaussian_1d</strong></summary>
+  <p>후보 위치들 + 정답 위치 + 퍼지는 폭 → 위치마다 얼마나 정답에 가까운지 나타내는 점수.</p>
+  <div class="rows">
+    <div class="row" data-lines="31-31"><div><span class="line">31행</span><pre><code>def gaussian_1d(pos, muy, sigma):</code></pre></div><p>pos는 후보 위치들, muy는 정답 위치, sigma는 점수가 퍼지는 폭이에요.</p></div>
+    <div class="row" data-lines="32-32"><div><span class="line">32행</span><pre><code>    &quot;&quot;&quot;Create 1D Gaussian distribution based on ball position (muy), and std (sigma)&quot;&quot;&quot;</code></pre></div><p>정답을 중심으로 둥근 봉우리 모양의 점수를 만든다는 설명이에요.</p></div>
+    <div class="row" data-lines="33-33"><div><span class="line">33행</span><pre><code>    target = torch.exp(- (((pos - muy) / sigma) ** 2) / 2)</code></pre></div><p>pos - muy로 정답과의 거리를 구해요. sigma로 나누고 제곱하면 좌우가 같은 점수를 받아요. torch.exp를 적용하면 정답 위치는 1이고 멀수록 0에 가까워져요. pos가 벡터면 모든 칸에 한꺼번에 계산해요.</p></div>
+    <div class="row" data-lines="34-34"><div><span class="line">34행</span><pre><code>    return target</code></pre></div><p>각 위치의 점수가 담긴 텐서를 돌려줘요.</p></div>
+  </div>
+</details>
+<details class="function" id="ball">
+  <summary><span class="line">37행</span> <strong>create_target_ball</strong></summary>
+  <p>공 좌표 (x, y) → 가로 후보 320칸과 세로 후보 128칸을 이어 붙인 정답 점수표.</p>
+  <div class="rows">
+    <div class="row" data-lines="37-37"><div><span class="line">37행</span><pre><code>def create_target_ball(ball_position_xy, sigma, w, h, thresh_mask, device):</code></pre></div><p>공 좌표, 봉우리 폭, 화면 너비·높이, 점수를 자를 기준값, CPU 또는 GPU를 받아요.</p></div>
+    <div class="row" data-lines="38-47"><div><span class="line">38–47행</span><pre><code>    &quot;&quot;&quot;Create target for the ball detection stages
+
+    :param ball_position_xy: Position of the ball (x,y)
+    :param sigma: standard deviation (a hyperparameter)
+    :param w: width of the resize image
+    :param h: height of the resize image
+    :param thresh_mask: if values of 1D Gaussian &lt; thresh_mask --&gt; set to 0 to reduce computation
+    :param device: cuda() or cpu()
+    :return:
+    &quot;&quot;&quot;</code></pre></div><p>매개변수 설명이에요. w·h는 크기를 줄인 모델 입력 이미지 기준이에요.</p></div>
+    <div class="row" data-lines="48-48"><div><span class="line">48행</span><pre><code>    w, h = int(w), int(h)</code></pre></div><p>너비와 높이를 정수로 바꿔요. 정수는 배열 길이로 쓸 수 있어요.</p></div>
+    <div class="row" data-lines="49-49"><div><span class="line">49행</span><pre><code>    target_ball_position = torch.zeros((w + h,), device=device)</code></pre></div><p>가로 w칸과 세로 h칸에 쓸 공간을 한 줄로 만들고 모두 0으로 채워요.</p></div>
+    <div class="row" data-lines="50-50"><div><span class="line">50행</span><pre><code>    # Only do the next step if the ball is existed</code></pre></div><p>이 아래는 공 좌표가 유효할 때 실행한다는 주석이에요.</p></div>
+    <div class="row" data-lines="51-51"><div><span class="line">51행</span><pre><code>    if (w &gt; ball_position_xy[0] &gt; 0) and (h &gt; ball_position_xy[1] &gt; 0):</code></pre></div><p>첫 번째 좌표 x가 0과 w 사이, 두 번째 좌표 y가 0과 h 사이인지 검사해요. 이 구현의 비교는 엄격해서 좌표 0도 통과하지 않아요.</p></div>
+    <div class="row" data-lines="52-52"><div><span class="line">52행</span><pre><code>        # For x</code></pre></div><p>이제 가로 방향의 점수를 만드는 부분이라는 주석이에요.</p></div>
+    <div class="row" data-lines="53-53"><div><span class="line">53행</span><pre><code>        x_pos = torch.arange(0, w, device=device)</code></pre></div><p>가로 후보 번호 0, 1, …, w-1을 텐서로 만들어요.</p></div>
+    <div class="row" data-lines="54-54"><div><span class="line">54행</span><pre><code>        target_ball_position[:w] = gaussian_1d(x_pos, ball_position_xy[0], sigma=sigma)</code></pre></div><p>정답 x가 가장 높은 가로 점수표를 만들고, 앞 w칸에 넣어요. [:w]는 처음부터 w 직전까지예요.</p></div>
+    <div class="row" data-lines="55-55"><div><span class="line">55행</span><pre><code>        # For y</code></pre></div><p>이제 세로 방향의 점수를 만드는 부분이라는 주석이에요.</p></div>
+    <div class="row" data-lines="56-56"><div><span class="line">56행</span><pre><code>        y_pos = torch.arange(0, h, device=device)</code></pre></div><p>세로 후보 번호 0, 1, …, h-1을 텐서로 만들어요.</p></div>
+    <div class="row" data-lines="57-57"><div><span class="line">57행</span><pre><code>        target_ball_position[w:] = gaussian_1d(y_pos, ball_position_xy[1], sigma=sigma)</code></pre></div><p>정답 y가 가장 높은 세로 점수표를 만들고, w번째 칸부터 끝까지 넣어요.</p></div>
+    <div class="row" data-lines="59-59"><div><span class="line">59행</span><pre><code>        target_ball_position[target_ball_position &lt; thresh_mask] = 0.</code></pre></div><p>기준값보다 작은 점수만 골라 0으로 바꿔요. 대괄호 안의 비교식이 점수를 골라 주는 필터예요.</p></div>
+    <div class="row" data-lines="61-61"><div><span class="line">61행</span><pre><code>    return target_ball_position</code></pre></div><p>정답 점수표를 돌려줘요. 좌표 검사에서 통과하지 못했다면 처음 만든 0들만 남아요.</p></div>
+  </div>
+</details>
+<details class="function" id="smooth">
+  <summary><span class="line">64행</span> <strong>smooth_event_labelling</strong></summary>
+  <p>한 샘플의 이벤트 정답을 [바운드 점수, 네트 접촉 점수] 두 칸으로 표현합니다.</p>
+  <div class="rows">
+    <div class="row" data-lines="64-64"><div><span class="line">64행</span><pre><code>def smooth_event_labelling(event_class, smooth_idx, event_frameidx):</code></pre></div><p>이벤트 종류, 지금 만들 샘플의 가운데 번호, 실제 이벤트 번호를 받아요.</p></div>
+    <div class="row" data-lines="65-65"><div><span class="line">65행</span><pre><code>    target_events = np.zeros((2,))</code></pre></div><p>두 칸짜리 NumPy 배열 [0, 0]에서 시작해요.</p></div>
+    <div class="row" data-lines="66-66"><div><span class="line">66행</span><pre><code>    if event_class &lt; 2:</code></pre></div><p>0은 바운드, 1은 네트 접촉이에요. 이벤트 없음(2)은 아래 계산을 건너뛰고 0 두 개를 유지해요.</p></div>
+    <div class="row" data-lines="67-67"><div><span class="line">67행</span><pre><code>        n = smooth_idx - event_frameidx</code></pre></div><p>샘플 가운데가 실제 이벤트에서 몇 프레임 떨어졌는지 구해요. 같으면 n은 0이에요.</p></div>
+    <div class="row" data-lines="68-68"><div><span class="line">68행</span><pre><code>        target_events[event_class] = np.cos(n * np.pi / 8)</code></pre></div><p>코사인으로 해당 이벤트 칸만 채워요. n=0이면 1, n=2이면 약 0.71이에요. event_class가 0이면 첫 칸에 넣어요.</p></div>
+    <div class="row" data-lines="69-69"><div><span class="line">69행</span><pre><code>        target_events[target_events &lt; 0.01] = 0.</code></pre></div><p>0.01보다 작은 값을 0으로 만들어요. 실제 이벤트에서 4장 떨어진 경우도 이렇게 0이 돼요.</p></div>
+    <div class="row" data-lines="70-70"><div><span class="line">70행</span><pre><code>    return target_events</code></pre></div><p>예를 들어 정확히 바운드 순간이면 [1, 0]을 돌려줘요.</p></div>
+  </div>
+</details>
+<details class="function" id="events">
+  <summary><span class="line">73행</span> <strong>get_events_infor</strong></summary>
+  <p>경기별 JSON → 프레임 경로 9개와 정답이 묶인 학습 샘플 목록. 이 파일에서 먼저 읽을 함수입니다.</p>
+  <div class="rows">
+    <div class="row" data-lines="73-73"><div><span class="line">73행</span><pre><code>def get_events_infor(game_list, configs, dataset_type):</code></pre></div><p>경기 이름 목록, 설정 묶음, 데이터 구분(training 또는 test)을 받아요. configs.이름은 설정 안에서 이름이 붙은 값을 읽는 방식이에요.</p></div>
+    <div class="row" data-lines="74-81"><div><span class="line">74–81행</span><pre><code>    &quot;&quot;&quot;Get information of sequences of images based on events
+
+    :param game_list: List of games (video names)
+    :return:
+    [
+        each event: [[img_path_list], ball_position, target_events, segmentation_path]
+    ]
+    &quot;&quot;&quot;</code></pre></div><p>함수 설명이에요. 샘플 한 개를 이미지 경로들, 공 좌표, 이벤트 점수, 마스크 경로로 구성한다고 알려줘요.</p></div>
+    <div class="row" data-lines="82-82"><div><span class="line">82행</span><pre><code>    # the paper mentioned 25, but used 9 frames only</code></pre></div><p>논문과 이 구현에서 쓰는 프레임 수가 다르다는 저자의 주석이에요.</p></div>
+    <div class="row" data-lines="83-83"><div><span class="line">83행</span><pre><code>    num_frames_from_event = int((configs.num_frames_sequence - 1) / 2)</code></pre></div><p>기본 9장이면 (9 - 1) / 2 = 4예요. 가운데 앞뒤로 4장씩 고를 거예요.</p></div>
+    <div class="row" data-lines="85-85"><div><span class="line">85행</span><pre><code>    annos_dir = os.path.join(configs.dataset_dir, dataset_type, 'annotations')</code></pre></div><p>데이터셋 경로, training/test, annotations를 이어 라벨 폴더 주소를 만들어요.</p></div>
+    <div class="row" data-lines="86-86"><div><span class="line">86행</span><pre><code>    images_dir = os.path.join(configs.dataset_dir, dataset_type, 'images')</code></pre></div><p>같은 방식으로 프레임 이미지 폴더 주소를 만들어요.</p></div>
+    <div class="row" data-lines="87-87"><div><span class="line">87행</span><pre><code>    events_infor = []</code></pre></div><p>완성된 샘플 묶음들을 보관할 빈 리스트예요.</p></div>
+    <div class="row" data-lines="88-88"><div><span class="line">88행</span><pre><code>    events_labels = []</code></pre></div><p>샘플마다 이벤트 종류 번호 하나를 보관할 빈 리스트예요.</p></div>
+    <div class="row" data-lines="89-89"><div><span class="line">89행</span><pre><code>    for game_name in game_list:</code></pre></div><p>첫 번째 반복문이에요. 경기 이름을 하나 꺼내 아래 과정을 실행하고, 다음 경기로 넘어가요.</p></div>
+    <div class="row" data-lines="90-90"><div><span class="line">90행</span><pre><code>        ball_annos_path = os.path.join(annos_dir, game_name, 'ball_markup.json')</code></pre></div><p>현재 경기의 ball_markup.json 경로를 만들어요.</p></div>
+    <div class="row" data-lines="91-91"><div><span class="line">91행</span><pre><code>        events_annos_path = os.path.join(annos_dir, game_name, 'events_markup.json')</code></pre></div><p>현재 경기의 events_markup.json 경로를 만들어요.</p></div>
+    <div class="row" data-lines="92-92"><div><span class="line">92행</span><pre><code>        # Load ball annotations</code></pre></div><p>이제 공 좌표 파일을 읽는다는 주석이에요.</p></div>
+    <div class="row" data-lines="93-93"><div><span class="line">93행</span><pre><code>        json_ball = open(ball_annos_path)</code></pre></div><p>open()으로 공 좌표 파일을 열어요.</p></div>
+    <div class="row" data-lines="94-94"><div><span class="line">94행</span><pre><code>        ball_annos = json.load(json_ball)</code></pre></div><p>json.load()가 열린 파일을 읽어 딕셔너리로 만들어요. 예를 들어 키 '22'로 22번 공 좌표를 찾을 수 있어요.</p></div>
+    <div class="row" data-lines="96-96"><div><span class="line">96행</span><pre><code>        # Load events annotations</code></pre></div><p>이제 이벤트 파일을 읽는다는 주석이에요.</p></div>
+    <div class="row" data-lines="97-97"><div><span class="line">97행</span><pre><code>        json_events = open(events_annos_path)</code></pre></div><p>이벤트 JSON 파일을 열어요.</p></div>
+    <div class="row" data-lines="98-98"><div><span class="line">98행</span><pre><code>        events_annos = json.load(json_events)</code></pre></div><p>이벤트 JSON을 딕셔너리로 읽어요. 예를 들어 키 '18', 값 'bounce'가 있어요.</p></div>
+    <div class="row" data-lines="99-99"><div><span class="line">99행</span><pre><code>        for event_frameidx, event_name in events_annos.items():</code></pre></div><p>두 번째 반복문이에요. items()에서 프레임 번호와 이벤트 이름을 한 쌍씩 꺼내요.</p></div>
+    <div class="row" data-lines="100-100"><div><span class="line">100행</span><pre><code>            event_frameidx = int(event_frameidx)</code></pre></div><p>JSON 키 '18'을 숫자 18로 바꿔요. 이제 앞뒤로 4를 더하거나 뺄 수 있어요.</p></div>
+    <div class="row" data-lines="101-101"><div><span class="line">101행</span><pre><code>            smooth_frame_indices = [event_frameidx]  # By default</code></pre></div><p>기본 설정에서는 실제 이벤트 번호 하나만 가운데 후보예요. 18번 바운드면 [18]이에요.</p></div>
+    <div class="row" data-lines="102-102"><div><span class="line">102행</span><pre><code>            if (event_name != 'empty_event') and (configs.smooth_labelling):</code></pre></div><p>이벤트가 있고 --smooth-labelling 옵션이 켜진 경우에만 아래 후보 확장을 해요. and는 두 조건이 모두 맞을 때예요.</p></div>
+    <div class="row" data-lines="103-104"><div><span class="line">103–104행</span><pre><code>                smooth_frame_indices = [idx for idx in range(event_frameidx - num_frames_from_event,
+                                                             event_frameidx + num_frames_from_event + 1)]</code></pre></div><p>스무딩을 켰다면 18번 주변 14~22번도 가운데 후보에 넣어요. 여기서 만드는 것은 여러 샘플의 가운데 번호들이에요.</p></div>
+    <div class="row" data-lines="106-106"><div><span class="line">106행</span><pre><code>            for smooth_idx in smooth_frame_indices:</code></pre></div><p>세 번째 반복문이에요. 가운데 후보 하나를 뽑아 샘플 하나를 만들어요. 기본 설정의 18번 바운드는 이 반복을 한 번 돌아요.</p></div>
+    <div class="row" data-lines="107-108"><div><span class="line">107–108행</span><pre><code>                sub_smooth_frame_indices = [idx for idx in range(smooth_idx - num_frames_from_event,
+                                                                 smooth_idx + num_frames_from_event + 1)]</code></pre></div><p>선택한 가운데 번호를 기준으로 이 샘플에 들어갈 사진 9장의 번호를 만들어요. range는 끝을 빼므로 22를 넣으려면 끝에 23을 전달해요.</p></div>
+    <div class="row" data-lines="109-109"><div><span class="line">109행</span><pre><code>                img_path_list = []</code></pre></div><p>이 샘플의 사진 경로 9개를 담을 새 리스트를 만들어요.</p></div>
+    <div class="row" data-lines="110-110"><div><span class="line">110행</span><pre><code>                for sub_smooth_idx in sub_smooth_frame_indices:</code></pre></div><p>사진 번호를 14부터 22까지 하나씩 꺼내요.</p></div>
+    <div class="row" data-lines="111-111"><div><span class="line">111행</span><pre><code>                    img_path = os.path.join(images_dir, game_name, 'img_{:06d}.jpg'.format(sub_smooth_idx))</code></pre></div><p>번호 14를 img_000014.jpg로 바꾸고 경기 폴더 경로를 붙여요. {:06d}는 숫자를 여섯 자리로 쓰고 빈자리를 0으로 채워요.</p></div>
+    <div class="row" data-lines="112-112"><div><span class="line">112행</span><pre><code>                    img_path_list.append(img_path)</code></pre></div><p>방금 만든 파일 경로를 리스트 끝에 붙여요. 이 줄을 9번 돌면 경로 9개가 모여요.</p></div>
+    <div class="row" data-lines="113-113"><div><span class="line">113행</span><pre><code>                last_f_idx = smooth_idx + num_frames_from_event</code></pre></div><p>마지막 사진 번호를 계산해요. 가운데 18 + 뒤쪽 4 = 22예요.</p></div>
+    <div class="row" data-lines="114-114"><div><span class="line">114행</span><pre><code>                # Get ball position for the last frame in the sequence</code></pre></div><p>공 위치는 마지막 사진의 라벨을 쓴다는 주석이에요.</p></div>
+    <div class="row" data-lines="115-115"><div><span class="line">115행</span><pre><code>                if '{}'.format(last_f_idx) not in ball_annos.keys():</code></pre></div><p>마지막 번호를 다시 문자열 '22'로 바꾸고, 공 좌표 딕셔너리에 그 키가 있는지 확인해요.</p></div>
+    <div class="row" data-lines="116-116"><div><span class="line">116행</span><pre><code>                    print('smooth_idx: {} - no ball position for the frame idx {}'.format(smooth_idx, last_f_idx))</code></pre></div><p>공 좌표를 찾지 못했을 때 어떤 프레임인지 출력해요.</p></div>
+    <div class="row" data-lines="117-117"><div><span class="line">117행</span><pre><code>                    continue</code></pre></div><p>현재 샘플을 건너뛰고 다음 가운데 후보로 넘어가요. 아래 append()는 실행되지 않아요.</p></div>
+    <div class="row" data-lines="118-118"><div><span class="line">118행</span><pre><code>                ball_position_xy = ball_annos['{}'.format(last_f_idx)]</code></pre></div><p>공 좌표 딕셔너리에서 마지막 사진 '22'의 항목을 꺼내요.</p></div>
+    <div class="row" data-lines="119-119"><div><span class="line">119행</span><pre><code>                ball_position_xy = np.array([ball_position_xy['x'], ball_position_xy['y']], dtype=int)</code></pre></div><p>{'x': 611, 'y': 526}에서 x와 y를 꺼내 정수 배열 [611, 526]으로 만들어요. dtype=int는 배열에 정수를 담겠다는 뜻이에요.</p></div>
+    <div class="row" data-lines="120-120"><div><span class="line">120행</span><pre><code>                # Ignore the event without ball information</code></pre></div><p>음수 좌표는 유효한 공 정보가 아니라는 주석이에요.</p></div>
+    <div class="row" data-lines="121-121"><div><span class="line">121행</span><pre><code>                if (ball_position_xy[0] &lt; 0) or (ball_position_xy[1] &lt; 0):</code></pre></div><p>x나 y 중 하나라도 음수인지 검사해요. or는 둘 중 하나만 맞아도 참이에요.</p></div>
+    <div class="row" data-lines="122-122"><div><span class="line">122행</span><pre><code>                    continue</code></pre></div><p>음수라면 현재 샘플을 건너뛰어요.</p></div>
+    <div class="row" data-lines="124-124"><div><span class="line">124행</span><pre><code>                # Get segmentation path for the last frame in the sequence</code></pre></div><p>마스크도 마지막 사진 기준으로 찾는다는 주석이에요.</p></div>
+    <div class="row" data-lines="125-125"><div><span class="line">125행</span><pre><code>                seg_path = os.path.join(annos_dir, game_name, 'segmentation_masks', '{}.png'.format(last_f_idx))</code></pre></div><p>현재 경기 폴더에서 segmentation_masks/22.png의 경로를 만들어요. 분할 마스크는 이미지의 각 픽셀이 어느 영역에 속하는지 표시한 정답 그림이에요.</p></div>
+    <div class="row" data-lines="126-126"><div><span class="line">126행</span><pre><code>                if not os.path.isfile(seg_path):</code></pre></div><p>마스크 파일이 실제로 없는지 확인해요.</p></div>
+    <div class="row" data-lines="127-127"><div><span class="line">127행</span><pre><code>                    print(&quot;smooth_idx: {} - The segmentation path {} is invalid&quot;.format(smooth_idx, seg_path))</code></pre></div><p>마스크를 찾지 못했다면 해당 경로를 출력해요.</p></div>
+    <div class="row" data-lines="128-128"><div><span class="line">128행</span><pre><code>                    continue</code></pre></div><p>마스크가 없으므로 현재 샘플을 건너뛰어요.</p></div>
+    <div class="row" data-lines="129-129"><div><span class="line">129행</span><pre><code>                event_class = configs.events_dict[event_name]</code></pre></div><p>설정의 이벤트 사전에서 이름을 번호로 바꿔요. bounce는 0, net은 1, empty_event는 2예요.</p></div>
+    <div class="row" data-lines="131-131"><div><span class="line">131행</span><pre><code>                target_events = smooth_event_labelling(event_class, smooth_idx, event_frameidx)</code></pre></div><p>모델이 맞혀야 할 두 칸짜리 이벤트 정답을 만들어요. 18번에 정확히 바운드가 일어났다면 [1, 0]이에요.</p></div>
+    <div class="row" data-lines="132-132"><div><span class="line">132행</span><pre><code>                events_infor.append([img_path_list, ball_position_xy, target_events, seg_path])</code></pre></div><p>사진 경로, 공 위치, 이벤트 점수, 마스크 경로를 리스트 하나로 묶어 샘플 목록에 저장해요.</p></div>
+    <div class="row" data-lines="133-133"><div><span class="line">133행</span><pre><code>                # Re-label if the event is neither bounce nor net hit</code></pre></div><p>이벤트 점수 두 칸이 모두 0이면 이벤트가 없는 샘플로 분류한다는 주석이에요.</p></div>
+    <div class="row" data-lines="134-134"><div><span class="line">134행</span><pre><code>                if (target_events[0] == 0) and (target_events[1] == 0):</code></pre></div><p>바운드 점수도 0이고 네트 접촉 점수도 0인지 확인해요.</p></div>
+    <div class="row" data-lines="135-135"><div><span class="line">135행</span><pre><code>                    event_class = 2</code></pre></div><p>둘 다 0이면 분할용 종류 번호를 2(이벤트 없음)로 바꿔요.</p></div>
+    <div class="row" data-lines="136-136"><div><span class="line">136행</span><pre><code>                events_labels.append(event_class)</code></pre></div><p>방금 추가한 샘플에 대응하는 종류 번호를 두 번째 목록에 추가해요.</p></div>
+    <div class="row" data-lines="137-137"><div><span class="line">137행</span><pre><code>    return events_infor, events_labels</code></pre></div><p>샘플 묶음 목록과 이벤트 종류 번호 목록을 같이 돌려줘요. 같은 순번끼리 짝이에요.</p></div>
+  </div>
+</details>
+<details class="function" id="split">
+  <summary><span class="line">140행</span> <strong>train_val_data_separation</strong></summary>
+  <p>학습용 경기에서 만든 샘플 → 모델을 가르칠 학습 묶음과 중간에 실력을 확인할 검증 묶음.</p>
+  <div class="rows">
+    <div class="row" data-lines="140-140"><div><span class="line">140행</span><pre><code>def train_val_data_separation(configs):</code></pre></div><p>데이터 분할에 필요한 설정을 받아요.</p></div>
+    <div class="row" data-lines="141-141"><div><span class="line">141행</span><pre><code>    &quot;&quot;&quot;Seperate data to training and validation sets&quot;&quot;&quot;</code></pre></div><p>이 함수가 학습과 검증 데이터를 나눈다는 설명이에요.</p></div>
+    <div class="row" data-lines="142-142"><div><span class="line">142행</span><pre><code>    dataset_type = 'training'</code></pre></div><p>training 폴더의 경기만 대상으로 하겠다고 정해요.</p></div>
+    <div class="row" data-lines="143-143"><div><span class="line">143행</span><pre><code>    events_infor, events_labels = get_events_infor(configs.train_game_list, configs, dataset_type)</code></pre></div><p>위에서 공부한 get_events_infor()로 전체 샘플 목록과 이벤트 종류 목록을 받아요.</p></div>
+    <div class="row" data-lines="144-144"><div><span class="line">144행</span><pre><code>    if configs.no_val:</code></pre></div><p>검증을 생략하도록 설정됐는지 확인해요.</p></div>
+    <div class="row" data-lines="145-145"><div><span class="line">145행</span><pre><code>        train_events_infor = events_infor</code></pre></div><p>검증을 생략하면 모든 샘플을 학습 목록으로 사용해요.</p></div>
+    <div class="row" data-lines="146-146"><div><span class="line">146행</span><pre><code>        train_events_labels = events_labels</code></pre></div><p>모든 이벤트 종류도 학습 목록으로 넘겨요.</p></div>
+    <div class="row" data-lines="147-147"><div><span class="line">147행</span><pre><code>        val_events_infor = None</code></pre></div><p>검증용 샘플 목록은 없다고 표시해요. None은 값이 없다는 뜻이에요.</p></div>
+    <div class="row" data-lines="148-148"><div><span class="line">148행</span><pre><code>        val_events_labels = None</code></pre></div><p>검증용 이벤트 종류 목록도 없다고 표시해요.</p></div>
+    <div class="row" data-lines="149-149"><div><span class="line">149행</span><pre><code>    else:</code></pre></div><p>검증을 하는 경우 아래 분할 코드를 실행해요.</p></div>
+    <div class="row" data-lines="150-150"><div><span class="line">150행</span><pre><code>        train_events_infor, val_events_infor, train_events_labels, val_events_labels = train_test_split(events_infor,</code></pre></div><p>두 목록을 함께 나눠 학습·검증 샘플과 각각에 대응하는 이벤트 종류, 총 네 목록을 받아요.</p></div>
+    <div class="row" data-lines="151-151"><div><span class="line">151행</span><pre><code>                                                                                                        events_labels,</code></pre></div><p>나눌 때 샘플 순서를 섞어요.</p></div>
+    <div class="row" data-lines="152-152"><div><span class="line">152행</span><pre><code>                                                                                                        shuffle=True,</code></pre></div><p>검증에 배정하는 크기를 설정에서 가져와요.</p></div>
+    <div class="row" data-lines="153-153"><div><span class="line">153행</span><pre><code>                                                                                                        test_size=configs.val_size,</code></pre></div><p>같은 입력과 설정이면 같은 분할을 재현할 수 있게 난수 시드를 전달해요.</p></div>
+    <div class="row" data-lines="154-155"><div><span class="line">154–155행</span><pre><code>                                                                                                        random_state=configs.seed,
+                                                                                                        stratify=events_labels)</code></pre></div><p>바운드·네트 접촉·이벤트 없음의 비율이 비슷하게 나뉘도록 이벤트 번호 목록을 사용해요. 이 코드는 경기 단위 분리 대신 샘플 단위로 나눠요.</p></div>
+    <div class="row" data-lines="156-156"><div><span class="line">156행</span><pre><code>    return train_events_infor, val_events_infor, train_events_labels, val_events_labels</code></pre></div><p>학습 샘플, 검증 샘플, 학습 종류 번호, 검증 종류 번호를 순서대로 돌려줘요.</p></div>
+  </div>
+</details>
+<details class="function" id="debug">
+  <summary><span class="line">159행</span> <strong>파일 맨 아래 직접 실행하는 부분</strong></summary>
+  <p>이 파일을 직접 실행할 때 설정과 데이터 분할, 공 좌표 정답 계산을 확인하는 예제.</p>
+  <div class="rows">
+    <div class="row" data-lines="159-159"><div><span class="line">159행</span><pre><code>if __name__ == '__main__':</code></pre></div><p>이 파일을 직접 실행했을 때만 아래를 실행해요. 다른 파일이 import할 때는 함수 정의들을 사용할 수 있어요.</p></div>
+    <div class="row" data-lines="160-160"><div><span class="line">160행</span><pre><code>    from config.config import parse_configs</code></pre></div><p>TTNet 설정을 읽는 함수를 가져와요.</p></div>
+    <div class="row" data-lines="162-162"><div><span class="line">162행</span><pre><code>    configs = parse_configs()</code></pre></div><p>프로그램 실행 설정을 읽어 configs에 담아요.</p></div>
+    <div class="row" data-lines="163-163"><div><span class="line">163행</span><pre><code>    train_events_infor, val_events_infor, train_events_labels, val_events_labels = train_val_data_separation(configs)</code></pre></div><p>학습·검증 분할의 네 목록을 받아요.</p></div>
+    <div class="row" data-lines="164-164"><div><span class="line">164행</span><pre><code>    print('Counter train_events_labels: {}'.format(Counter(train_events_labels)))</code></pre></div><p>Counter로 학습 목록에서 이벤트 종류별 수를 세고 출력해요.</p></div>
+    <div class="row" data-lines="165-165"><div><span class="line">165행</span><pre><code>    if val_events_labels is not None:</code></pre></div><p>검증 목록이 있는지 확인해요.</p></div>
+    <div class="row" data-lines="166-166"><div><span class="line">166행</span><pre><code>        print('Counter val_events_labels: {}'.format(Counter(val_events_labels)))</code></pre></div><p>검증 목록이 있으면 이벤트 종류별 수를 출력해요.</p></div>
+    <div class="row" data-lines="167-167"><div><span class="line">167행</span><pre><code>    event_name = 'net'</code></pre></div><p>예제로 네트 접촉 이름을 변수에 넣어요.</p></div>
+    <div class="row" data-lines="168-168"><div><span class="line">168행</span><pre><code>    event_class = configs.events_dict[event_name]</code></pre></div><p>설정에서 네트 접촉 번호를 찾아 저장해요. 아래 공 좌표 예제에서는 이 변수를 사용하지 않아요.</p></div>
+    <div class="row" data-lines="169-169"><div><span class="line">169행</span><pre><code>    configs.device = torch.device('cpu')</code></pre></div><p>뒤에 만드는 PyTorch 텐서를 CPU에 두도록 설정해요.</p></div>
+    <div class="row" data-lines="170-170"><div><span class="line">170행</span><pre><code>    ball_position_xy = np.array([100, 50])</code></pre></div><p>예제 공의 위치를 x=100, y=50으로 정해요.</p></div>
+    <div class="row" data-lines="171-172"><div><span class="line">171–172행</span><pre><code>    target_ball_position = create_target_ball(ball_position_xy, sigma=0.5, w=320, h=128, thresh_mask=0.01,
+                                              device=configs.device)</code></pre></div><p>예제 좌표를 너비 320과 높이 128 기준의 448칸짜리 정답 점수표로 바꿔요.</p></div>
+    <div class="row" data-lines="174-174"><div><span class="line">174행</span><pre><code>    max_val_x = (target_ball_position[:320]).max()</code></pre></div><p>앞 320칸의 가로 점수 중 가장 큰 값 자체를 구해요.</p></div>
+    <div class="row" data-lines="175-175"><div><span class="line">175행</span><pre><code>    max_val_y = (target_ball_position[320:]).max()</code></pre></div><p>뒤 128칸의 세로 점수 중 가장 큰 값 자체를 구해요.</p></div>
+    <div class="row" data-lines="176-176"><div><span class="line">176행</span><pre><code>    target_ball_g_x = np.argmax(target_ball_position[:320])</code></pre></div><p>가로 점수에서 가장 큰 값이 있는 칸 번호를 구해요. 예제에서는 100이에요.</p></div>
+    <div class="row" data-lines="177-177"><div><span class="line">177행</span><pre><code>    target_ball_g_y = np.argmax(target_ball_position[320:])</code></pre></div><p>세로 점수에서 가장 큰 값이 있는 칸 번호를 구해요. 예제에서는 50이에요.</p></div>
+    <div class="row" data-lines="178-178"><div><span class="line">178행</span><pre><code>    print('max_val_x: {}, max_val_y: {}'.format(max_val_x, max_val_y))</code></pre></div><p>가로와 세로의 최대 점수 값을 출력해요. 이 예제에서는 둘 다 1이에요.</p></div>
+    <div class="row" data-lines="179-179"><div><span class="line">179행</span><pre><code>    print('target_ball_g_x: {}, target_ball_g_x: {}'.format(target_ball_g_x, target_ball_g_y))</code></pre></div><p>최대 점수가 나온 좌표 두 개를 출력해요. 출력 문구는 x가 두 번 적혀 있지만, 두 번째 값은 y예요.</p></div>
+  </div>
+</details>
+<section id="check">
+  <h2>이해 확인</h2>
+  <details class="quiz"><summary>100번에서 바운드했다면 기본 설정의 첫 사진과 마지막 사진은?</summary><p>96번과 104번이에요. 이벤트는 100번, 공 좌표와 마스크는 104번이에요.</p></details>
+  <details class="quiz"><summary>104번의 공 좌표가 없다면 둘 중 어느 줄이 실행될까요? continue / append()</summary><p><code>continue</code>일 때 이번 샘플을 건너뛰어요. <code>append()</code>는 정답까지 갖춘 샘플만 추가해요.</p></details>
+  <details class="quiz"><summary>샘플 1개의 이벤트 정답 [0, 1]은 무슨 뜻일까요?</summary><p>가운데 사진의 이벤트가 네트 접촉이라는 뜻이에요. 첫 칸은 바운드, 둘째 칸은 네트 접촉이에요.</p></details>
+</section>
+</main></body></html>
