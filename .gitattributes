@@ -1,0 +1,2 @@
+ttnet/models/ball_weighted_30_epoch_30.pth filter=lfs diff=lfs merge=lfs -text
+ttnet/models/ball_weighted_30_best.pth filter=lfs diff=lfs merge=lfs -text

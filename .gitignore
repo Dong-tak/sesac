@@ -15,6 +15,8 @@ result/
 checkpoints/
 *.pt
 *.pth
+!ttnet/models/ball_weighted_30_epoch_30.pth
+!ttnet/models/ball_weighted_30_best.pth
 *.ckpt
 *.onnx
 *.zip
