@@ -11,6 +11,7 @@
 | `02-transformer/training/` | uv 환경과 Multi30k 준비 스크립트가 포함된 실습본 | [실행 안내](02-transformer/training/SETUP.md) |
 | `03-web-visualizations/` | 벡터·각도 학습 페이지와 Transformer 교재의 웹 게시용 파일 | [페이지 안내](03-web-visualizations/README.md) |
 | `04-table-tennis-ai-referee/` | 탁구 AI 심판 기획과 YOLO11 탁구공 검출기 학습 | [학습 안내](04-table-tennis-ai-referee/README.md) · [기획서](04-table-tennis-ai-referee/PLAN.md) |
+| `ttnet/` | TTNet 학습 및 웹캠 실험 | [실습 안내](ttnet/README.md) |
 
 ```text
 sesac/
